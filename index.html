@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shift JIS ⇄ UTF-8 文字コード変換ツール</title>
+    <script src="https://unpkg.com/encoding-japanese@2.2.0/encoding.min.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+            max-width: 1000px;
+            width: 100%;
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 28px;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+
+        .content {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+            padding: 30px;
+            min-height: 500px;
+        }
+
+        @media (max-width: 768px) {
+            .content {
+                grid-template-columns: 1fr;
+                min-height: auto;
+            }
+        }
+
+        .panel {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .panel h2 {
+            font-size: 18px;
+            color: #333;
+            border-bottom: 2px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        textarea {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            resize: vertical;
+            transition: border-color 0.3s;
+        }
+
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        #outputText {
+            flex: 1;
+            padding: 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            background: #f9f9f9;
+            overflow-y: auto;
+            word-break: break-all;
+            white-space: pre-wrap;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .btn-primary {
+            background: #667eea;
+            color: white;
+            min-width: 100px;
+        }
+
+        .btn-primary:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-primary:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background: #f0f0f0;
+            color: #333;
+            min-width: 100px;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+            transform: translateY(-2px);
+        }
+
+        .btn-secondary:active {
+            transform: translateY(0);
+        }
+
+        .btn-success {
+            background: #4caf50;
+            color: white;
+            min-width: 100px;
+        }
+
+        .btn-success:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(76, 175, 80, 0.4);
+        }
+
+        .btn-success:active {
+            transform: translateY(0);
+        }
+
+        input[type="file"] {
+            padding: 10px;
+            border: 2px dashed #667eea;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+
+        .info-box {
+            background: #f0f7ff;
+            border-left: 4px solid #667eea;
+            padding: 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            color: #555;
+        }
+
+        .info-box strong {
+            color: #667eea;
+        }
+
+        .stats {
+            display: flex;
+            gap: 15px;
+            font-size: 13px;
+            color: #666;
+            flex-wrap: wrap;
+        }
+
+        .stat {
+            background: #f5f5f5;
+            padding: 8px 12px;
+            border-radius: 4px;
+        }
+
+        .stat strong {
+            color: #667eea;
+        }
+
+        .hidden {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>Shift JIS ⇄ UTF-8 文字コード変換ツール</h1>
+            <p>ブラウザ上で完全に動作します。プライベートで安全です。</p>
+        </div>
+
+        <div class="content">
+            <!-- 入力パネル -->
+            <div class="panel">
+                <h2>📝 入力</h2>
+                <div class="stats">
+                    <div class="stat">文字数: <strong id="charCount">0</strong></div>
+                    <div class="stat">バイト数: <strong id="byteCount">0</strong></div>
+                </div>
+                <textarea id="inputText" placeholder="ここにテキストを入力またはファイルをアップロード..."></textarea>
+                <input type="file" id="fileInput" accept=".txt, .csv, .json, .log">
+            </div>
+
+            <!-- 出力パネル -->
+            <div class="panel">
+                <h2>✅ 出力</h2>
+                <div class="info-box">
+                    文字コードの変換: <strong id="detectedEncoding">-</strong>
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary" id="downloadBtn">⬇️ ダウンロード</button>
+                </div>
+                <div id="outputText" placeholder="変換結果がここに表示されます"></div>
+                <button class="btn-secondary" id="clearBtn">🔄 クリア</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const inputText = document.getElementById('inputText');
+        const outputText = document.getElementById('outputText');
+        const fileInput = document.getElementById('fileInput');
+        const downloadBtn = document.getElementById('downloadBtn');
+        const clearBtn = document.getElementById('clearBtn');
+        const detectedEncodingEl = document.getElementById('detectedEncoding');
+        const charCountEl = document.getElementById('charCount');
+        const byteCountEl = document.getElementById('byteCount');
+
+        let currentInputArray = null;    // 入力の数値配列
+        let currentOutputArray = null;   // 出力の数値配列
+        let currentDetectedEncoding = null;
+
+        // テキスト入力イベント
+        inputText.addEventListener('input', convertText);
+
+        // ファイル読み込みイベント
+        fileInput.addEventListener('change', handleFileUpload);
+
+        // ダウンロードボタン
+        downloadBtn.addEventListener('click', downloadFile);
+
+        // クリアボタン
+        clearBtn.addEventListener('click', clearAll);
+
+        function convertText() {
+            const text = inputText.value;
+
+            if (text.length === 0) {
+                outputText.textContent = '';
+                detectedEncodingEl.textContent = '-';
+                charCountEl.textContent = '0';
+                byteCountEl.textContent = '0';
+                currentInputArray = null;
+                currentOutputArray = null;
+                return;
+            }
+
+            try {
+                // ブラウザ入力テキスト（UTF-8）をバイト配列に変換
+                const textBytes = new TextEncoder().encode(text);
+                currentInputArray = Array.from(textBytes);
+
+                // UTF-8バイト配列をShift JISバイト配列に変換
+                currentOutputArray = Encoding.convert(currentInputArray, {
+                    to: 'SJIS',
+                    from: 'UTF8'
+                });
+
+                // 出力を表示：Shift JISバイト配列 → UTF-8バイト配列 → UNICODE文字列
+                const outputUtf8 = Encoding.convert(currentOutputArray, {
+                    to: 'UTF8',
+                    from: 'SJIS'
+                });
+                const displayText = Encoding.convert(outputUtf8, {
+                    to: 'UNICODE',
+                    from: 'UTF8',
+                    type: 'string'
+                });
+                outputText.textContent = displayText;
+
+                detectedEncodingEl.textContent = 'UTF8 → SJIS';
+            } catch (error) {
+                outputText.textContent = `エラー: ${error.message}`;
+                console.error('変換エラー:', error);
+            }
+
+            updateStats();
+        }
+
+        function handleFileUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                try {
+                    const arrayBuffer = e.target.result;
+                    const uint8Array = new Uint8Array(arrayBuffer);
+                    currentInputArray = Array.from(uint8Array);
+
+                    // 文字コードを判別
+                    const detected = Encoding.detect(currentInputArray);
+                    let fromEncoding = detected || 'SJIS';
+                    let targetEncoding = 'UTF8';
+
+                    console.log('判別された文字コード:', detected);
+
+                    // 反対の文字コードに変換
+                    if (fromEncoding === 'UTF8' || fromEncoding === 'UTF-8') {
+                        targetEncoding = 'SJIS';
+                        fromEncoding = 'UTF8';
+                    } else {
+                        targetEncoding = 'UTF8';
+                        fromEncoding = 'SJIS';
+                    }
+
+                    // 入力側を表示：元のバイト配列 → UTF-8 → UNICODE文字列
+                    const inputUtf8 = Encoding.convert(currentInputArray, {
+                        to: 'UTF8',
+                        from: fromEncoding
+                    });
+                    const inputDisplay = Encoding.convert(inputUtf8, {
+                        to: 'UNICODE',
+                        from: 'UTF8',
+                        type: 'string'
+                    });
+                    inputText.value = inputDisplay;
+
+                    // 出力側を変換・保存
+                    currentOutputArray = Encoding.convert(currentInputArray, {
+                        to: targetEncoding,
+                        from: fromEncoding
+                    });
+
+                    // 出力側を表示：変換結果 → UTF-8 → UNICODE文字列
+                    const outputUtf8 = Encoding.convert(currentOutputArray, {
+                        to: 'UTF8',
+                        from: targetEncoding
+                    });
+                    const outputDisplay = Encoding.convert(outputUtf8, {
+                        to: 'UNICODE',
+                        from: 'UTF8',
+                        type: 'string'
+                    });
+                    outputText.textContent = outputDisplay;
+
+                    detectedEncodingEl.textContent = `${fromEncoding} → ${targetEncoding}`;
+                    updateStats();
+                    fileInput.value = '';
+                } catch (error) {
+                    outputText.textContent = `ファイル読み込みエラー: ${error.message}`;
+                    console.error('ファイルアップロードエラー:', error);
+                    fileInput.value = '';
+                }
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        function updateStats() {
+            const text = inputText.value;
+            charCountEl.textContent = text.length;
+
+            // UTF-8でのバイト数を計算
+            const utf8Bytes = new TextEncoder().encode(text);
+            byteCountEl.textContent = utf8Bytes.length;
+        }
+
+        function downloadFile() {
+            if (!currentOutputArray || currentOutputArray.length === 0) {
+                alert('ダウンロードするデータがありません');
+                return;
+            }
+
+            try {
+                // 数値配列をUint8Arrayに変換
+                const uint8Array = new Uint8Array(currentOutputArray);
+                const blob = new Blob([uint8Array], { type: 'text/plain' });
+
+                const element = document.createElement('a');
+                element.href = URL.createObjectURL(blob);
+                element.download = `converted_${Date.now()}.csv`;
+                document.body.appendChild(element);
+                element.click();
+                document.body.removeChild(element);
+                URL.revokeObjectURL(element.href);
+            } catch (error) {
+                alert(`ダウンロードエラー: ${error.message}`);
+                console.error('ダウンロードエラー:', error);
+            }
+        }
+
+        function clearAll() {
+            inputText.value = '';
+            outputText.textContent = '';
+            fileInput.value = '';
+            detectedEncodingEl.textContent = '-';
+            charCountEl.textContent = '0';
+            byteCountEl.textContent = '0';
+            currentInputArray = null;
+            currentOutputArray = null;
+            currentDetectedEncoding = null;
+        }
+
+        // 初期表示
+        updateStats();
+    </script>
+</body>
+</html>
