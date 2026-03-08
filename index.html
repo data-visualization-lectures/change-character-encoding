@@ -4,11 +4,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Shift JIS ⇄ UTF-8 文字コード変換ツール</title>
+    <title id="pageTitle">Shift JIS ⇄ UTF-8 文字コード変換ツール</title>
 
     <!-- 共通ヘッダ・認証 (Supabase) -->
     <script src="https://auth.dataviz.jp/lib/supabase.js"></script>
     <script src="https://auth.dataviz.jp/lib/dataviz-auth-client.js"></script>
+
+    <!-- i18next -->
+    <script src="https://cdn.jsdelivr.net/npm/i18next@23.7.6/dist/umd/i18next.min.js"></script>
 
     <script src="https://unpkg.com/encoding-japanese@2.2.0/encoding.min.js"></script>
     <style>
@@ -42,6 +45,35 @@
             color: white;
             padding: 30px;
             text-align: center;
+            position: relative;
+        }
+
+        .language-switcher {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            display: flex;
+            gap: 10px;
+            font-size: 13px;
+        }
+
+        .lang-link {
+            color: white;
+            text-decoration: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            background: rgba(255, 255, 255, 0.2);
+            transition: background 0.3s;
+            cursor: pointer;
+        }
+
+        .lang-link.active {
+            background: rgba(255, 255, 255, 0.5);
+            font-weight: bold;
+        }
+
+        .lang-link:hover {
+            background: rgba(255, 255, 255, 0.3);
         }
 
         .header h1 {
@@ -66,6 +98,12 @@
             .content {
                 grid-template-columns: 1fr;
                 min-height: auto;
+            }
+
+            .language-switcher {
+                position: static;
+                justify-content: center;
+                padding: 10px;
             }
         }
 
@@ -224,17 +262,17 @@
 <body>
     <div class="container">
         <div class="header">
-            <h1>Shift JIS ⇄ UTF-8 文字コード変換ツール</h1>
-            <p>ブラウザ上で完全に動作します。プライベートで安全です。</p>
+            <h1 id="headerTitle">Shift JIS ⇄ UTF-8 文字コード変換ツール</h1>
+            <p id="headerSubtitle">ブラウザ上で完全に動作します。プライベートで安全です。</p>
         </div>
 
         <div class="content">
             <!-- 入力パネル -->
             <div class="panel">
-                <h2>📝 入力</h2>
+                <h2 id="inputLabel">📝 入力</h2>
                 <div class="stats">
-                    <div class="stat">文字数: <strong id="charCount">0</strong></div>
-                    <div class="stat">バイト数: <strong id="byteCount">0</strong></div>
+                    <div class="stat"><span id="charCountLabel">文字数</span>: <strong id="charCount">0</strong></div>
+                    <div class="stat"><span id="byteCountLabel">バイト数</span>: <strong id="byteCount">0</strong></div>
                 </div>
                 <textarea id="inputText" placeholder="ここにテキストを入力またはファイルをアップロード..."></textarea>
                 <input type="file" id="fileInput" accept=".txt, .csv, .json, .log">
@@ -242,20 +280,75 @@
 
             <!-- 出力パネル -->
             <div class="panel">
-                <h2>✅ 出力</h2>
+                <h2 id="outputLabel">✅ 出力</h2>
                 <div class="info-box">
-                    文字コードの変換: <strong id="detectedEncoding">-</strong>
+                    <span id="encodingLabel">文字コードの変換</span>: <strong id="detectedEncoding">-</strong>
                 </div>
                 <div class="button-group">
-                    <button class="btn-primary" id="downloadBtn">⬇️ ダウンロード</button>
+                    <button class="btn-primary" id="downloadBtn">⬇️ <span id="downloadBtnLabel">ダウンロード</span></button>
                 </div>
                 <div id="outputText" placeholder="変換結果がここに表示されます"></div>
-                <button class="btn-secondary" id="clearBtn">🔄 クリア</button>
+                <button class="btn-secondary" id="clearBtn">🔄 <span id="clearBtnLabel">クリア</span></button>
             </div>
         </div>
     </div>
 
     <script>
+        // i18next 初期化
+        i18next.init({
+            lng: navigator.language.startsWith('ja') ? 'ja' : 'en',
+            fallbackLng: 'en',
+            resources: {
+                ja: {
+                    translation: {
+                        pageTitle: 'Shift JIS ⇄ UTF-8 文字コード変換ツール',
+                        headerTitle: 'Shift JIS ⇄ UTF-8 文字コード変換ツール',
+                        headerSubtitle: 'ブラウザ上で完全に動作します。プライベートで安全です。',
+                        inputLabel: '📝 入力',
+                        outputLabel: '✅ 出力',
+                        charCountLabel: '文字数',
+                        byteCountLabel: 'バイト数',
+                        encodingLabel: '文字コードの変換',
+                        downloadBtnLabel: 'ダウンロード',
+                        clearBtnLabel: 'クリア',
+                        inputPlaceholder: 'ここにテキストを入力またはファイルをアップロード...',
+                        outputPlaceholder: '変換結果がここに表示されます',
+                        downloadErrorMessage: 'ダウンロードするデータがありません',
+                        downloadErrorTitle: 'ダウンロードエラー',
+                        conversionError: 'エラー',
+                        fileReadError: 'ファイル読み込みエラー',
+                        conversionErrorMessage: '変換エラー',
+                        downloadErrorMessage2: 'ダウンロードエラー'
+                    }
+                },
+                en: {
+                    translation: {
+                        pageTitle: 'Shift JIS ⇄ UTF-8 Character Code Converter',
+                        headerTitle: 'Shift JIS ⇄ UTF-8 Character Code Converter',
+                        headerSubtitle: 'Works completely in the browser. Safe and private.',
+                        inputLabel: '📝 Input',
+                        outputLabel: '✅ Output',
+                        charCountLabel: 'Characters',
+                        byteCountLabel: 'Bytes',
+                        encodingLabel: 'Encoding Conversion',
+                        downloadBtnLabel: 'Download',
+                        clearBtnLabel: 'Clear',
+                        inputPlaceholder: 'Enter text here or upload a file...',
+                        outputPlaceholder: 'Conversion results will be displayed here',
+                        downloadErrorMessage: 'No data to download',
+                        downloadErrorTitle: 'Download Error',
+                        conversionError: 'Error',
+                        fileReadError: 'File Read Error',
+                        conversionErrorMessage: 'Conversion Error',
+                        downloadErrorMessage2: 'Download Error'
+                    }
+                }
+            }
+        });
+
+        // Set HTML lang attribute
+        document.documentElement.lang = i18next.language;
+
         const inputText = document.getElementById('inputText');
         const outputText = document.getElementById('outputText');
         const fileInput = document.getElementById('fileInput');
@@ -265,20 +358,39 @@
         const charCountEl = document.getElementById('charCount');
         const byteCountEl = document.getElementById('byteCount');
 
-        let currentInputArray = null;    // 入力の数値配列
-        let currentOutputArray = null;   // 出力の数値配列
+        let currentInputArray = null;
+        let currentOutputArray = null;
         let currentDetectedEncoding = null;
 
-        // テキスト入力イベント
+        function initializeUI() {
+            // ページタイトルの更新
+            document.getElementById('pageTitle').textContent = i18next.t('pageTitle');
+            document.getElementById('headerTitle').textContent = i18next.t('headerTitle');
+            document.getElementById('headerSubtitle').textContent = i18next.t('headerSubtitle');
+
+            // ラベルの更新
+            document.getElementById('inputLabel').innerHTML = i18next.t('inputLabel');
+            document.getElementById('outputLabel').innerHTML = i18next.t('outputLabel');
+            document.getElementById('charCountLabel').textContent = i18next.t('charCountLabel');
+            document.getElementById('byteCountLabel').textContent = i18next.t('byteCountLabel');
+            document.getElementById('encodingLabel').textContent = i18next.t('encodingLabel');
+
+            // ボタンラベルの更新
+            document.getElementById('downloadBtn').innerHTML = '⬇️ <span id="downloadBtnLabel">' + i18next.t('downloadBtnLabel') + '</span>';
+            document.getElementById('clearBtn').innerHTML = '🔄 <span id="clearBtnLabel">' + i18next.t('clearBtnLabel') + '</span>';
+
+            // プレースホルダーの更新
+            inputText.placeholder = i18next.t('inputPlaceholder');
+            outputText.textContent = '';
+        }
+
+        // Initialize UI immediately
+        initializeUI();
+
+        // イベントリスナー
         inputText.addEventListener('input', convertText);
-
-        // ファイル読み込みイベント
         fileInput.addEventListener('change', handleFileUpload);
-
-        // ダウンロードボタン
         downloadBtn.addEventListener('click', downloadFile);
-
-        // クリアボタン
         clearBtn.addEventListener('click', clearAll);
 
         function convertText() {
@@ -295,17 +407,14 @@
             }
 
             try {
-                // ブラウザ入力テキスト（UTF-8）をバイト配列に変換
                 const textBytes = new TextEncoder().encode(text);
                 currentInputArray = Array.from(textBytes);
 
-                // UTF-8バイト配列をShift JISバイト配列に変換
                 currentOutputArray = Encoding.convert(currentInputArray, {
                     to: 'SJIS',
                     from: 'UTF8'
                 });
 
-                // 出力を表示：Shift JISバイト配列 → UTF-8バイト配列 → UNICODE文字列
                 const outputUtf8 = Encoding.convert(currentOutputArray, {
                     to: 'UTF8',
                     from: 'SJIS'
@@ -319,8 +428,8 @@
 
                 detectedEncodingEl.textContent = 'UTF8 → SJIS';
             } catch (error) {
-                outputText.textContent = `エラー: ${error.message}`;
-                console.error('変換エラー:', error);
+                outputText.textContent = `${i18next.t('conversionError')}: ${error.message}`;
+                console.error(i18next.t('conversionErrorMessage'), error);
             }
 
             updateStats();
@@ -337,14 +446,12 @@
                     const uint8Array = new Uint8Array(arrayBuffer);
                     currentInputArray = Array.from(uint8Array);
 
-                    // 文字コードを判別
                     const detected = Encoding.detect(currentInputArray);
                     let fromEncoding = detected || 'SJIS';
                     let targetEncoding = 'UTF8';
 
                     console.log('判別された文字コード:', detected);
 
-                    // 反対の文字コードに変換
                     if (fromEncoding === 'UTF8' || fromEncoding === 'UTF-8') {
                         targetEncoding = 'SJIS';
                         fromEncoding = 'UTF8';
@@ -353,7 +460,6 @@
                         fromEncoding = 'SJIS';
                     }
 
-                    // 入力側を表示：元のバイト配列 → UTF-8 → UNICODE文字列
                     const inputUtf8 = Encoding.convert(currentInputArray, {
                         to: 'UTF8',
                         from: fromEncoding
@@ -365,13 +471,11 @@
                     });
                     inputText.value = inputDisplay;
 
-                    // 出力側を変換・保存
                     currentOutputArray = Encoding.convert(currentInputArray, {
                         to: targetEncoding,
                         from: fromEncoding
                     });
 
-                    // 出力側を表示：変換結果 → UTF-8 → UNICODE文字列
                     const outputUtf8 = Encoding.convert(currentOutputArray, {
                         to: 'UTF8',
                         from: targetEncoding
@@ -387,8 +491,8 @@
                     updateStats();
                     fileInput.value = '';
                 } catch (error) {
-                    outputText.textContent = `ファイル読み込みエラー: ${error.message}`;
-                    console.error('ファイルアップロードエラー:', error);
+                    outputText.textContent = `${i18next.t('fileReadError')}: ${error.message}`;
+                    console.error(i18next.t('fileReadError'), error);
                     fileInput.value = '';
                 }
             };
@@ -399,19 +503,17 @@
             const text = inputText.value;
             charCountEl.textContent = text.length;
 
-            // UTF-8でのバイト数を計算
             const utf8Bytes = new TextEncoder().encode(text);
             byteCountEl.textContent = utf8Bytes.length;
         }
 
         function downloadFile() {
             if (!currentOutputArray || currentOutputArray.length === 0) {
-                alert('ダウンロードするデータがありません');
+                alert(i18next.t('downloadErrorMessage'));
                 return;
             }
 
             try {
-                // 数値配列をUint8Arrayに変換
                 const uint8Array = new Uint8Array(currentOutputArray);
                 const blob = new Blob([uint8Array], { type: 'text/plain' });
 
@@ -423,8 +525,8 @@
                 document.body.removeChild(element);
                 URL.revokeObjectURL(element.href);
             } catch (error) {
-                alert(`ダウンロードエラー: ${error.message}`);
-                console.error('ダウンロードエラー:', error);
+                alert(`${i18next.t('downloadErrorTitle')}: ${error.message}`);
+                console.error(i18next.t('downloadErrorMessage2'), error);
             }
         }
 
@@ -440,7 +542,6 @@
             currentDetectedEncoding = null;
         }
 
-        // 初期表示
         updateStats();
     </script>
 </body>
