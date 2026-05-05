@@ -1,3 +1,9 @@
 [build]
   command = "mkdir -p dist && cp index.html dist/index.html"
   publish = "dist"
+
+[[redirects]]
+  from = "https://change-character-encoding.dataviz.jp/*"
+  to = "https://change-character-encoding.dataprep.jp/:splat"
+  status = 301
+  force = true
